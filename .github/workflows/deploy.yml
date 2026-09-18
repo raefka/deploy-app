@@ -1,0 +1,64 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  # ==========================================
+  # CI
+  # ==========================================
+  ci:
+    name: Test and Build
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build
+
+
+  # ==========================================
+  # CD
+  # ==========================================
+  deploy:
+    name: Deploy to OVH VPS
+
+    # IMPORTANT:
+    # deploy only runs if CI succeeds
+    needs: ci
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Connect to VPS and deploy
+        uses: appleboy/ssh-action@v1
+
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+
+          script: |
+            cd /var/www/deploy-app
+            ./deploy.sh
