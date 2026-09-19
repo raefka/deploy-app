@@ -8,7 +8,7 @@ on:
 jobs:
 
   # ==========================================
-  # CI
+  # CI - Frontend + Backend
   # ==========================================
   ci:
     name: Test and Build
@@ -16,35 +16,71 @@ jobs:
 
     steps:
 
+      # ------------------------------------------
+      # Checkout repository
+      # ------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+
+      # ------------------------------------------
+      # Setup Node.js
+      # ------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      - name: Install dependencies
-        run: npm install
 
-      - name: Run lint
+      # ==========================================
+      # FRONTEND
+      # ==========================================
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend lint
+        working-directory: frontend
         run: npm run lint
 
-      - name: Run tests
+      - name: Run frontend tests
+        working-directory: frontend
         run: npm test
 
-      - name: Build application
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+
+      # ==========================================
+      # BACKEND
+      # ==========================================
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run backend lint
+        working-directory: backend
+        run: npm run lint
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test
+
+      - name: Build backend
+        working-directory: backend
         run: npm run build
 
 
   # ==========================================
-  # CD
+  # CD - Deploy to OVH VPS
   # ==========================================
   deploy:
     name: Deploy to OVH VPS
 
-    # IMPORTANT:
-    # deploy only runs if CI succeeds
+    # Deploy ONLY if CI succeeds
     needs: ci
 
     runs-on: ubuntu-latest
@@ -53,7 +89,6 @@ jobs:
 
       - name: Connect to VPS and deploy
         uses: appleboy/ssh-action@v1
-
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
