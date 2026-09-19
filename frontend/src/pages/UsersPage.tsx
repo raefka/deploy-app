@@ -102,7 +102,7 @@ export const UsersPage = () => {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Users Management Dashboard</h1>
           <button
             onClick={() => setShowForm(true)}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
