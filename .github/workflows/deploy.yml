@@ -83,5 +83,5 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
 
           script: |
-            cd /var/www/deploy-app
+            cd /var/www/
             ./deploy.sh
