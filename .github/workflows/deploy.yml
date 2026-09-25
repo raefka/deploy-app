@@ -83,7 +83,5 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
 
           script: |
-            whoami
-            echo "HOME=$HOME"
             cd /var/www/
             ./deploy.sh
