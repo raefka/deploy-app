@@ -81,7 +81,12 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-
+          envs: PORT,MONGODB_URI
           script: |
+            echo "PORT=${PORT}" >> /var/www/deploy-app/backend/.env
+            echo "MONGODB_URI=${MONGODB_URI}" > /var/www/deploy-app/backend/.env
             cd /var/www/
             ./deploy.sh
+        env:
+          PORT: ${{ secrets.PORT }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
