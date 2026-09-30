@@ -5,88 +5,188 @@ on:
     branches:
       - main
 
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+
 jobs:
 
-  # ==========================================
-  # CI - Frontend + Backend
-  # ==========================================
+  # ============================================================
+  # CI - FRONTEND + BACKEND
+  # ============================================================
+
   ci:
     name: Test and Build
     runs-on: ubuntu-latest
 
     steps:
 
-      # ------------------------------------------
-      # Checkout repository
-      # ------------------------------------------
+      # ----------------------------------------------------------
+      # Checkout
+      # ----------------------------------------------------------
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
 
-      # ------------------------------------------
-      # Setup Node.js
-      # ------------------------------------------
+      # ----------------------------------------------------------
+      # Node.js
+      # ----------------------------------------------------------
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
+          # Cache npm packages
+          cache: npm
 
-      # ==========================================
+          # Your project has two package-lock.json files
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+
+      # ==========================================================
       # FRONTEND
-      # ==========================================
+      # ==========================================================
 
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
-      - name: Run frontend lint
+      - name: Lint frontend
         working-directory: frontend
         run: npm run lint
+
+      - name: Test frontend
+        working-directory: frontend
+        run: npm test -- --run
 
       - name: Build frontend
         working-directory: frontend
         run: npm run build
 
 
-      # ==========================================
+      # ==========================================================
       # BACKEND
-      # ==========================================
+      # ==========================================================
 
       - name: Install backend dependencies
         working-directory: backend
         run: npm ci
+
+      - name: Test backend
+        working-directory: backend
+        run: npm test
 
       - name: Build backend
         working-directory: backend
         run: npm run build
 
 
-  # ==========================================
-  # CD - Deploy to OVH VPS
-  # ==========================================
+  # ============================================================
+  # CD - DEPLOY TO OVH VPS
+  # ============================================================
+
   deploy:
     name: Deploy to OVH VPS
 
-    # Deploy ONLY if CI succeeds
     needs: ci
+
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     runs-on: ubuntu-latest
 
+    environment:
+      name: production
+
     steps:
 
-      - name: Connect to VPS and deploy
+      # ----------------------------------------------------------
+      # Connect to VPS
+      # ----------------------------------------------------------
+
+      - name: Deploy application
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+
           envs: PORT,MONGODB_URI
+
           script: |
-            echo "PORT=${PORT}" >> /var/www/deploy-app/backend/.env
-            echo "MONGODB_URI=${MONGODB_URI}" > /var/www/deploy-app/backend/.env
+
+            # Stop immediately if any command fails
+            set -e
+
+            echo "======================================"
+            echo "Starting deployment"
+            echo "======================================"
+
+            # ----------------------------------------------------
+            # Create production .env
+            # ----------------------------------------------------
+
+            echo "Creating backend .env..."
+
+            cat > /var/www/deploy-app/backend/.env << EOF
+            PORT=${PORT}
+            MONGODB_URI=${MONGODB_URI}
+            EOF
+
+
+          
+            # ----------------------------------------------------
+            # Run deployment script
+            # ----------------------------------------------------
             cd /var/www/
+
+            echo "Running deploy.sh..."
+
             ./deploy.sh
+
+            echo "======================================"
+            echo "Deployment completed"
+            echo "======================================"
+
         env:
           PORT: ${{ secrets.PORT }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
+
+
+      # ----------------------------------------------------------
+      # Health Check
+      # ----------------------------------------------------------
+
+      - name: Check application health
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+
+          script: |
+
+            set -e
+
+            echo "Checking backend health..."
+
+            sleep 5
+
+            curl --fail http://localhost:4000/api/health
+
+            echo ""
+            echo "======================================"
+            echo "Health check passed"
+            echo "Application is running correctly"
+            echo "======================================"
