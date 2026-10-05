@@ -1,0 +1,133 @@
+name: Reusable CI
+
+on:
+  workflow_call:
+    inputs:
+      run_frontend:
+        description: "Run frontend CI"
+        required: false
+        type: boolean
+        default: true
+
+      run_backend:
+        description: "Run backend CI"
+        required: false
+        type: boolean
+        default: true
+
+      node_version:
+        description: "Node.js version"
+        required: false
+        type: string
+        default: "24"
+
+jobs:
+
+  # ============================================================
+  # FRONTEND
+  # ============================================================
+
+  frontend:
+    name: Frontend - Lint & Build
+    if: ${{ inputs.run_frontend }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+
+      # ----------------------------------------------------------
+      # Checkout
+      # ----------------------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ----------------------------------------------------------
+      # Node.js
+      # ----------------------------------------------------------
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+
+      # ----------------------------------------------------------
+      # Dependencies
+      # ----------------------------------------------------------
+
+      - name: Install dependencies
+        run: npm ci
+
+
+      # ----------------------------------------------------------
+      # Lint
+      # ----------------------------------------------------------
+
+      - name: Lint
+        run: npm run lint
+
+
+      # ----------------------------------------------------------
+      # Build
+      # ----------------------------------------------------------
+
+      - name: Build
+        run: npm run build
+
+
+  # ============================================================
+  # BACKEND
+  # ============================================================
+
+  backend:
+    name: Backend - Build
+    if: ${{ inputs.run_backend }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+
+      # ----------------------------------------------------------
+      # Checkout
+      # ----------------------------------------------------------
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ----------------------------------------------------------
+      # Node.js
+      # ----------------------------------------------------------
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+
+      # ----------------------------------------------------------
+      # Dependencies
+      # ----------------------------------------------------------
+
+      - name: Install dependencies
+        run: npm ci
+
+
+      # ----------------------------------------------------------
+      # Build
+      # ----------------------------------------------------------
+
+      - name: Build
+        run: npm run build

@@ -12,6 +12,10 @@ on:
   workflow_dispatch:
 
 
+# ============================================================
+# CONCURRENCY
+# ============================================================
+
 concurrency:
   group: production
   cancel-in-progress: false
@@ -20,70 +24,18 @@ concurrency:
 jobs:
 
   # ============================================================
-  # CI - FRONTEND + BACKEND
+  # CI
   # ============================================================
 
   ci:
-    name: Test and Build
-    runs-on: ubuntu-latest
+    name: Frontend + Backend CI
 
-    steps:
+    uses: ./.github/workflows/reusable-ci.yml
 
-      # ----------------------------------------------------------
-      # Checkout
-      # ----------------------------------------------------------
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-
-      # ----------------------------------------------------------
-      # Node.js
-      # ----------------------------------------------------------
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-          # Cache npm packages
-          cache: npm
-
-          # Your project has two package-lock.json files
-          cache-dependency-path: |
-            frontend/package-lock.json
-            backend/package-lock.json
-
-
-      # ==========================================================
-      # FRONTEND
-      # ==========================================================
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Lint frontend
-        working-directory: frontend
-        run: npm run lint
-
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-
-      # ==========================================================
-      # BACKEND
-      # ==========================================================
-
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
-
-      - name: Build backend
-        working-directory: backend
-        run: npm run build
+    with:
+      run_frontend: true
+      run_backend: true
+      node_version: "24"
 
 
   # ============================================================
@@ -105,7 +57,7 @@ jobs:
     steps:
 
       # ----------------------------------------------------------
-      # Connect to VPS
+      # Deploy
       # ----------------------------------------------------------
 
       - name: Deploy application
@@ -119,7 +71,6 @@ jobs:
 
           script: |
 
-            # Stop immediately if any command fails
             set -e
 
             echo "======================================"
@@ -127,7 +78,7 @@ jobs:
             echo "======================================"
 
             # ----------------------------------------------------
-            # Create production .env
+            # Create production environment file
             # ----------------------------------------------------
 
             echo "Creating backend .env..."
@@ -137,11 +88,10 @@ jobs:
             MONGODB_URI=${MONGODB_URI}
             EOF
 
-
-          
             # ----------------------------------------------------
             # Run deployment script
             # ----------------------------------------------------
+
             cd /var/www/
 
             echo "Running deploy.sh..."
