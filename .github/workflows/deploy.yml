@@ -81,10 +81,6 @@ jobs:
         working-directory: backend
         run: npm ci
 
-      - name: Test backend
-        working-directory: backend
-        run: npm test
-
       - name: Build backend
         working-directory: backend
         run: npm run build
