@@ -5,6 +5,7 @@ import { UserTable } from "../components/UserTable";
 import { UserForm } from "../components/UserForm";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { Notification } from "../components/Notification";
+import { UserStats } from "../components/UserStats";
 
 type NotificationState = {
   message: string;
@@ -110,6 +111,8 @@ export const UsersPage = () => {
             + Add User
           </button>
         </div>
+
+        {!isLoading && <UserStats users={users} />}
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           {isLoading ? (
