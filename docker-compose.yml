@@ -1,0 +1,51 @@
+version: '3.0'
+
+services:
+  api:
+    build: ./backend/
+    image: raefkacem/deploy-app:api
+    container_name: api
+    ports:
+      - "4000:4000"
+    command: npm run dev 
+    depends_on:
+      - db
+    networks:
+      - web
+    environment:
+      PORT: 4000
+      MONGO_URI: mongodb://raef:raef@db:27017
+    volumes:
+      - "./backend:/app"
+      - "/app/node_modules"
+
+  web:
+    build: ./frontend/
+    image: raefkacem/deploy-app:web
+    container_name: web
+    networks:
+      - web
+    ports:
+      - "5173:5173"
+    command: npm run dev
+    volumes:
+      - "./frontend:/app"
+      - "/app/node_modules"
+  
+  db:
+    image: mongo
+    networks:
+      - web
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: raef
+      MONGO_INITDB_ROOT_PASSWORD: raef
+    volumes:
+      - db-data:/data/db
+
+networks:
+ web:
+   driver: bridge
+
+volumes:
+  db-data: {}
