@@ -37,6 +37,28 @@ jobs:
       run_backend: true
       node_version: "24"
 
+  # ============================================================
+  #   PUSH IMAGES TO DOCKER HUB
+  # ============================================================
+  build-and-push:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: raefkacem
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build images using docker-compose
+        run: docker compose build
+
+      - name: Push images to Docker Hub
+        run: docker compose push
 
   # ============================================================
   # CD - DEPLOY TO OVH VPS
